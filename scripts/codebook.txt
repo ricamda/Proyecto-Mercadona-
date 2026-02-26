@@ -1,0 +1,82 @@
+Codebook del ProyectoTD2024
+
+1. Información General
+   - Nombre del Proyecto: ProyectoTD2024
+   - Descripción: Análisis estadístico de tickets de compra de Mercadona para estudiar patrones de compra y su relación con factores como ubicación, tiempo de estacionamiento y características de la compra.
+
+2. Variables
+   a. ticket_id
+      - Tipo de dato: Numérico
+      - Descripción: Identificador único de cada ticket.
+   b. Empresa
+      - Tipo de dato: Texto
+      - Descripción: Nombre de la empresa (Mercadona).
+   c. Direccion
+      - Tipo de dato: Texto
+      - Descripción: Dirección del supermercado donde se realizó la compra.
+   d. CodigoPostal
+      - Tipo de dato: Numérico
+      - Descripción: Código postal del supermercado.
+   e. Municipio
+      - Tipo de dato: Texto
+      - Descripción: Municipio donde se encuentra el supermercado.
+   f. Telefono
+      - Tipo de dato: Texto
+      - Descripción: Número de teléfono del supermercado.
+   g. FechaCompra
+      - Tipo de dato: Fecha (YYYY-MM-DD)
+      - Descripción: Fecha en que se realizó la compra.
+   h. HoraOperacion
+      - Tipo de dato: Hora (HH:MM:SS)
+      - Descripción: Hora exacta de la operación de compra.
+   i. NumeroOperacion
+      - Tipo de dato: Numérico
+      - Descripción: Número secuencial de la operación de compra.
+   j. FacturaSimplificada
+      - Tipo de dato: Numérico
+      - Descripción: Indica número de factura.
+   k. Plazas
+      - Tipo de dato: Numérico
+      - Descripción: Número de plazas de estacionamiento ocupadas.
+   l. Coste
+      - Tipo de dato: Numérico (euros)
+      - Descripción: Coste asociado a la operación.
+   m. Entrada
+      - Tipo de dato: Hora (HH:MM:SS)
+      - Descripción: Hora de entrada al estacionamiento.
+   n. Salida
+      - Tipo de dato: Hora (HH:MM:SS)
+      - Descripción: Hora de salida del estacionamiento.
+   o. Cantidad
+      - Tipo de dato: Numérico
+      - Descripción: Cantidad del producto comprado.
+   p. Peso
+      - Tipo de dato: Numérico (kilogramos)
+      - Descripción: Peso del producto comprado.
+   q. Descripcion
+      - Tipo de dato: Texto
+      - Descripción: Descripción del producto comprado.
+   r. PrecioUnitario
+      - Tipo de dato: Numérico (euros)
+      - Descripción: Precio unitario del producto.
+   s. PrecioPorKilo
+      - Tipo de dato: Numérico (euros por kilo)
+      - Descripción: Precio del producto por kilogramo.
+   t. Importe
+      - Tipo de dato: Numérico (euros)
+      - Descripción: Importe del producto específico en el ticket.
+   u. ImporteTotal
+      - Tipo de dato: Numérico (euros)
+      - Descripción: Importe total de todos los productos en el ticket.
+
+3. Codificación de Datos
+   - Valores faltantes son codificados como 'NA' (No Disponible).
+   - Las variables de tipo hora se registran en formato de 24 horas para evitar ambigüedades.
+
+4. Metodología de Recolección de Datos
+   - Los datos fueron recopilados a partir de tickets físicos proporcionados voluntariamente por clientes de Mercadona.
+   - Los tickets en formato PDF fueron convertidos a texto usando un script en Python y luego importados a R para su análisis mediante el paquete 'tidyverse'.
+
+5. Uso de Datos
+   - Los datos son confidenciales y solo están disponibles para los miembros del proyecto y el cuerpo docente asociado.
+   - Cualquier uso externo de los datos requiere aprobación explícita por parte de los directores del proyecto.
