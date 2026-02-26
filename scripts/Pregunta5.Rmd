@@ -1,0 +1,329 @@
+---
+title: "Pregunta 5"
+author: "Sebastian Gutiérrez"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Explicacion
+A primera vista, podría parecer axiomático que la presencia de competidores cercanos influiría en el comportamiento de compra en diferentes ubicaciones. Sin embargo, en el ámbito del análisis de datos, nos esforzamos por abordar las preguntas con un enfoque más riguroso y cuantitativo. En este sentido, nos embarcamos en una investigación para explorar esta cuestión: ¿Existe una relación significativa entre la competencia cercana y las compras en distintas ubicaciones?
+
+Para abordar esta interrogante, utilizamos la información a nuestra disposición, comenzando con un exhaustivo proceso de preparación de datos basado en el conjunto de datos generado a partir de tickets de compra digitales. Este proceso implicó la limpieza y la transformación de los datos para obtener un conjunto de datos de alta calidad y fiabilidad. Además, empleamos la potencia de la librería "OpenStreetMap" (OSM) para obtener las coordenadas geográficas de los establecimientos Mercadona que estábamos estudiando. Aunque esta tarea presentó algunos desafíos, como la imprecisión en la obtención de algunas coordenadas, finalmente logramos crear un conjunto de datos denominado "mercadona_df_filtered", que agrupaba las variables relevantes para nuestro análisis y calculaba la media de las ventas totales para cada sucursal de Mercadona.
+
+Además, utilizamos datos externos que contenían información sobre los competidores de Mercadona - “competidores.csv”  y sus respectivas coordenadas geográficas. Estos datos requerían una labor de limpieza y normalización para garantizar su integridad y coherencia con nuestros análisis.
+
+Con ambos conjuntos de datos preparados y limpios, procedimos a cuantificar la proximidad de los competidores cercanos a cada sucursal de Mercadona. Para ello, calculamos la distancia euclidiana entre cada sucursal y sus competidores más próximos, definiendo dos rangos de proximidad: 500 metros y 1 kilómetro. Estos cálculos nos permitieron crear dos nuevas variables, "competidores" (dentro de un radio de 1 km) y "competidores_cercanos" (dentro de un radio de 500 metros), que representaban el número de competidores cercanos a cada sucursal de Mercadona en los rangos especificados.
+
+Posteriormente, llevamos a cabo un análisis exploratorio de los datos mediante la visualización de múltiples gráficos, utilizando técnicas adecuadas para cada tipo de variable. A pesar de nuestras expectativas iniciales, los resultados revelaron una correlación insignificante entre la presencia de competidores cercanos y las ventas totales de las sucursales de Mercadona. Este hallazgo fue respaldado tanto por los análisis cuantitativos como por la inspección visual de los datos.
+
+En conclusión, aunque inicialmente podríamos haber esperado que la competencia cercana tuviera un impacto significativo en las compras en diferentes ubicaciones, nuestros análisis no respaldan esta hipótesis. Es posible que futuras investigaciones puedan arrojar más luz sobre esta cuestión, pero con los datos y análisis disponibles, no podemos afirmar que exista una relación sustancial entre la competencia cercana y el comportamiento de compra en distintas ubicaciones.
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(osmdata)
+library(sf)
+library(httr)
+library(stringr)
+```
+
+```{r}
+library(dplyr)
+
+mercadona_df <- read.csv('ficheros_posteriores/observaciones.csv', sep = ",", header = TRUE, stringsAsFactors = FALSE)
+
+#mercadona_df <- mercadona_df %>%
+  #group_by(ticket_id) %>%
+  #mutate(frecuencia_ticket = n())
+
+
+mercadona_df <- mercadona_df %>%
+  select(ticket_id, Empresa, Direccion, CodigoPostal, Provincia, ImporteTotal,frecuencia_ticket) %>%
+  distinct(.keep_all = TRUE)
+
+```
+
+```{r}
+geocode_address <- function(address) {
+  response <- GET(
+    url = "https://nominatim.openstreetmap.org/search",
+    query = list(q = address, format = "json", limit = 1),
+    user_agent = "sebgu0305@gmail.com"  # Importante definir un User-Agent
+  )
+  if (length(content(response, "parsed")) > 0) {
+    location <- content(response, "parsed")[[1]]
+    if (!is.null(location$lon) && !is.null(location$lat)) {
+      return(c(lon = location$lon, lat = location$lat))
+    } else {
+      return(NA)
+    }
+  } else {
+    return(NA)
+  }
+}
+
+
+mercadona_df <- mercadona_df %>%
+  mutate(Direccion = sub(" S\\/N$", "", Direccion))%>%
+  mutate(coordenadas = map(paste(Direccion, CodigoPostal, Provincia, sep = ", "), geocode_address))
+
+```
+
+```{r}
+library(osmdata)
+library(dplyr)
+library(stringr)
+library(geosphere)
+
+options(digits = 12)
+
+# Verificar y limpiar los datos
+
+# Ordenar el dataframe por la columna "Direccion"
+mercadona_df <- mercadona_df[order(mercadona_df$Direccion), ]
+
+
+
+direcciones_registrar <- subset(mercadona_df, grepl("NA", coordenadas)) %>%
+  group_by(Direccion) 
+ unique(direcciones_registrar$Direccion)
+
+#Agregar coordenadas manualmente a mercadonas sin coordenadas por openstreetmap
+mercadona_df[mercadona_df$Direccion == "C/ MENORCA (C.C. AQUA) 19","coordenadas"] <- list('c(lon = "-0.34547005926295615", lat = "39.45702052361771")')
+mercadona_df[mercadona_df$Direccion == "C/ JERÓNIMO MONSORIU 60","coordenadas"] <- list('c(lon = "-0.33943250336394853", lat = "39.46496837882039")')
+mercadona_df[mercadona_df$Direccion == "C/ GENERAL AVILÉS 79","coordenadas"] <- list('c(lon = "0.40343906785426364", lat = "39.48265872530307")')
+mercadona_df[mercadona_df$Direccion == "AVDA. FERNANDO EL CATÓLICO 1","coordenadas"] <- list('c(lon = "-0.3952289046410521", lat = "39.54561753521614")')
+mercadona_df[mercadona_df$Direccion == "AVDA. OBISPO VICTORINO OLIVER 2","coordenadas"] <- list('c(lon = "-0.9559021245984873", lat = "38.19680522392054")')
+mercadona_df[mercadona_df$Direccion == "C/ VICENTE BOIX 4","coordenadas"] <- list('c(lon = "-0.5239036663335815", lat = "38.995866280244684")')
+mercadona_df[mercadona_df$Direccion == "CTRA. N-3 1","coordenadas"] <- list('c(lon = "-1.0862631275664767", lat = "39.48907315121579")')
+
+mercadona_df_filtered <- mercadona_df %>%
+  group_by(Direccion, Provincia, coordenadas, CodigoPostal,frecuencia_ticket) %>%
+  summarise(ImporteTotal = mean(ImporteTotal, na.rm = TRUE)) %>%
+  mutate(
+    coordenadas = gsub("c\\(lon = (.*), lat = (.*)\\)", "\\1,\\2", coordenadas),
+    coordenadas = gsub(",", ", ", coordenadas),
+    coordenadas = gsub(" ", "", coordenadas)
+  ) %>%
+  separate(coordenadas, c("lon", "lat"), sep = ",", convert = TRUE) %>%
+  filter(!is.na(lon) & !is.na(lat))  # Eliminar filas con NA en lon o lat
+
+mercadona_df_filtered<-mercadona_df_filtered%>%mutate(Direccion = sub(" S\\/N$", "", Direccion))
+
+# Convertir la columna 'lon' y 'lat' a numérica
+str(mercadona_df_filtered$lon)
+mercadona_df_filtered$lon <- as.numeric(gsub("\"", "", mercadona_df_filtered$lon))
+str(mercadona_df_filtered$lat)
+mercadona_df_filtered$lat <- as.numeric(gsub("\"", "", mercadona_df_filtered$lat))
+
+
+#Comptetidores
+competidores_df <- read.csv('ficheros_posteriores/competidores.csv', sep = ',', header = TRUE, stringsAsFactors = FALSE, row.names = NULL)
+
+
+competidores_df$latitud <- gsub("[^0-9.]", "", competidores_df$row.names)
+competidores_df <- competidores_df %>%
+  mutate(row.names = gsub(";[0-9.]*", "", row.names)) %>%
+  rename(longitud = empresa.coordenadas) %>%
+  rename(competidores.nombres = row.names)
+
+# Suponiendo que 'longitudes' y 'latitudes' son vectores de cadenas de caracteres con las coordenadas
+
+# Convertir las cadenas de caracteres a números y eliminar las comillas
+competidores_df<-competidores_df %>% 
+  mutate(
+    longitud= as.numeric(gsub("\"", "", longitud)),
+    latitud= as.numeric(gsub("\"", "", latitud))
+)
+
+
+#Verificar si existen valores fuera del rango
+outside_range <- competidores_df$longitud < -180 | competidores_df$longitud > 180
+
+
+outside_range2 <- competidores_df$latitud < -90 | competidores_df$latitud > 90
+
+table(outside_range)
+table(outside_range2)
+
+#Funcion numero de competidores
+calcular_competidores <- function(mercadona_df_filtered, competidores_df) {
+  num_competidores <- numeric(nrow(mercadona_df_filtered))  # Vector para almacenar el número de competidores para cada Mercadona
+  
+  for (i in 1:nrow(mercadona_df_filtered)) {
+    lon_mercadona <- mercadona_df_filtered$lon[i]  # Longitud de la Mercadona actual
+    lat_mercadona <- mercadona_df_filtered$lat[i]  # Latitud de la Mercadona actual
+    
+    # Contador para el número de competidores dentro del radio de 500 metros
+    num_competidores_within_radius <- 0
+    
+    for (j in 1:nrow(competidores_df)) {
+      lon_competidor <- competidores_df$longitud[j]  # Longitud del competidor actual
+      lat_competidor <- competidores_df$latitud[j]  # Latitud del competidor actual
+      
+      # Calcula la distancia entre la Mercadona y el competidor actual
+      distancia <- distGeo(c(lon_mercadona, lat_mercadona), c(lon_competidor, lat_competidor))
+      
+      # Si la distancia es menor o igual a 1000 metros, aumenta el contador
+      if (distancia <= 1000) {
+        num_competidores_within_radius <- num_competidores_within_radius + 1
+      }
+    }
+    
+    # Almacena el número de competidores para esta Mercadona en el vector
+    num_competidores[i] <- num_competidores_within_radius
+    
+  }
+  
+  return(num_competidores)  # Devuelve el vector con el número de competidores
+}
+
+# Llamo a la función para calcular el número de competidores y asignarlos a una nueva columna en el dataframe
+mercadona_df_filtered$competidores<-calcular_competidores(mercadona_df_filtered, competidores_df)
+
+#Calculamos si existe alguna correlacion con el coeficiente de correlación de Pearson
+correlation <- cor(mercadona_df_filtered$ImporteTotal, mercadona_df_filtered$competidores)
+
+print(correlation)
+
+
+
+# Crea el gráfico de dispersión
+grafico_pregutna5 <- ggplot(data = mercadona_df_filtered, aes(x = ImporteTotal, y = competidores)) +
+  geom_point() +
+  geom_smooth(method = "auto", se = FALSE) +
+  labs(x = "Importe Total Vendido", y = "Número de Competidores")
+
+
+
+# Agrega la anotación con el valor de correlación
+grafico_pregutna5  <- grafico_pregutna5  + annotate("text", x = max(mercadona_df_filtered$ImporteTotal), 
+                    y = min(mercadona_df_filtered$competidores), 
+                    label = paste("Correlación:", round(correlation, 2)), 
+                    hjust = 1, vjust = 0)
+
+# Muestra el gráfico
+print(grafico_pregutna5)
+
+```
+
+```{r prueba}
+# Cargamos las librerías necesarias
+library(geosphere)
+library(dplyr)
+library(ggplot2)
+library(ggrepel)  # Para etiquetas mejoradas
+
+# Definimos la función para contar competidores cercanos
+count_nearby_competitors <- function(lon, lat, competitors) {
+  distances <- distHaversine(matrix(c(lon, lat), nrow = 1), competitors[, c("longitud", "latitud")])
+  sum(distances <= 500)
+}
+
+# Calculamos los competidores cercanos para cada tienda de Mercadona
+mercadona_df_filtered$competidores_cercanos <- mapply(count_nearby_competitors, 
+                                                      mercadona_df_filtered$lon, 
+                                                      mercadona_df_filtered$lat, 
+                                                      MoreArgs = list(competitors = competidores_df))
+
+# Calculamos la correlación de Pearson
+correlation_value <- cor(mercadona_df_filtered$competidores_cercanos, mercadona_df_filtered$ImporteTotal, use = "complete.obs")
+
+# Creamos el gráfico
+ggplot(mercadona_df_filtered, aes(x = competidores_cercanos, y = ImporteTotal)) +
+  geom_point(alpha = 0.6, color = "blue") +  # Puntos de datos
+  geom_smooth(method = "lm", color = "red") +  # Línea de regresión
+  geom_label_repel(data = data.frame(x = Inf, y = Inf, label = sprintf("Correlación: %.2f", correlation_value)),
+                   aes(label = label), x = Inf, y = Inf, hjust = 1.1, vjust = 1.1, 
+                   box.padding = 0.5, point.padding = 0.5, segment.color = 'grey50') +
+  labs(x = "Número de Competidores en 500m",
+       y = "Facturación Total",
+       title = "Correlación entre el Número de Competidores y la Facturación de Mercadona",
+       subtitle = "Análisis de correlación de Pearson") +
+  theme_minimal()
+```
+
+```{r}
+#Scatter Plot
+ggplot(mercadona_df_filtered, aes(x = competidores_cercanos, y = ImporteTotal)) +
+  geom_point() +
+  labs(x = "Número de competidores cercanos",
+       y = "Ventas totales de Mercadona",
+       title = "Ventas totales de Mercadona vs Número de competidores cercanos")
+
+#Boxplot
+ggplot(mercadona_df_filtered, aes(x = factor(competidores_cercanos), y = ImporteTotal,color=factor(competidores_cercanos))) +
+  geom_boxplot() +
+  labs(title = "Boxplot de Importe Total por Competidores Cercanos", x = "Número de Competidores Cercanos", y = "Importe Total",color="Numero de competidores") +
+  theme_minimal()
+
+#Violinplot
+ggplot(mercadona_df_filtered, aes(x = factor(competidores_cercanos), y = ImporteTotal,color=factor(competidores_cercanos))) +
+  geom_violin() +
+  labs(title = "Boxplot de Importe Total por Competidores Cercanos", x = "Número de Competidores Cercanos", y = "Importe Total",color="Numero de competidores") +
+  theme_minimal()
+
+```
+
+```{r}
+library(MASS)
+library(ggplot2)
+
+# Asumiendo que mercadona_df_filtered ya tiene la columna nearby_competitors
+ggplot(mercadona_df_filtered, aes(x = competidores, y = ImporteTotal)) +
+  geom_point() +
+  geom_smooth(method = "rlm", se = TRUE, color = "blue") +
+  labs(title = "Correlación entre Importe Total y Competidores Cercanos",
+       x = "Número de Competidores Cercanos",
+       y = "Importe Total (€)") +
+  theme_minimal()
+
+```
+
+```{r Prueba Pablo}
+#library(dplyr)
+#library(geosphere)
+
+#find_competitors_within_1km <- function(mercadona_df_filtered, competidores_df) {
+  # Añadir una columna de índice explícito a cada dataframe
+  #mercadona_df_filtered$mercadona_index <- #seq_len(nrow(mercadona_df_filtered))
+  #competidores_df$competidor_index <- seq_len(nrow(competidores_df))
+
+  # Combina cada punto de Mercadona con todos los competidores
+ # cross_join <- expand.grid(mercadona_index = mercadona_df_filtered$mercadona_index, 
+                            #competidor_index = #competidores_df$competidor_index)
+
+  #cross_join <- cross_join %>%
+    #mutate(
+     # lon_mercadona = mercadona_df_filtered$lon[cross_join$mercadona_index],
+     # lat_mercadona = mercadona_df_filtered$lat[cross_join$mercadona_index],
+     # lon_competidor = competidores_df$longitud[cross_join$competidor_index],
+      #lat_competidor = competidores_df$latitud[cross_join$competidor_index]
+    #)
+
+  # Calcular la distancia
+  #cross_join <- cross_join %>%
+   # rowwise() %>%
+   # mutate(distance = distHaversine(c(lon_mercadona, lat_mercadona), c(lon_competidor, lat_competidor)))
+
+  # Filtrar competidores dentro de 1 km
+  #nearby_competitors <- cross_join %>%
+   # filter(distance <= 1000) %>%
+   # group_by(mercadona_index) %>%
+   # summarise(nearby_competitors = n())
+
+  # Agregar los resultados a df_mercadona
+  #mercadona_df_filtered <- mercadona_df_filtered %>%
+    #left_join(nearby_competitors, by = "mercadona_index")
+
+  # Rellenar NA con 0
+  #mercadona_df_filtered$nearby_competitors[is.na(mercadona_df_filtered$nearby_competitors)] <- 0
+  
+  #return(mercadona_df_filtered)
+#}
+
+# Utiliza la función con tus dataframes
+#mercadona_df_filtered <- find_competitors_within_1km(mercadona_df_filtered, competidores_df)
+
+```

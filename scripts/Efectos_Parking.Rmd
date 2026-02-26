@@ -1,0 +1,94 @@
+---
+title: "Efectos_Parking - ProyectoTD2024"
+author: Pablo Quesada, Sebastian David Gutierrez, Hugo Frasquet,
+  Mateo Mendez, Juan Gomez y David Ricci.
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Chunk para cargar todas las librerias que vamos a usar
+library(tidyverse)
+library(lubridate)
+library(hms)
+```
+
+```{r}
+# Chunk para cargar todos los ficheros que vamos a usar
+observaciones <- read.csv('ficheros_posteriores/observaciones.csv')
+```
+
+```{r}
+# Guardamos una copia por si acaso
+observaciones2 <- observaciones
+
+# Seleccionamos solamente las columnas que nos interesan
+observaciones <- observaciones %>%
+  select(c(ticket_id, Provincia, FechaCompra, HoraOperacion, Plazas, Entrada, Salida, ImporteTotal)) %>%
+  distinct(ticket_id, .keep_all = TRUE) %>%
+  mutate(parking = !is.na(Plazas))
+
+# Asegurarse de que las columnas son caracteres y no factores
+observaciones$Entrada <- as.character(observaciones$Entrada)
+observaciones$Salida <- as.character(observaciones$Salida)
+
+# Función para convertir hora HH:MM a minutos
+convertir_a_minutos <- function(hora) {
+  partes <- strsplit(hora, ":")[[1]]
+  if(length(partes) == 2) {
+    horas <- as.numeric(partes[1])
+    minutos <- as.numeric(partes[2])
+    return(horas * 60 + minutos)
+  } else {
+    return(NA)  # Devuelve NA si el formato no es correcto
+  }
+}
+
+# Aplicar la función a cada entrada de las columnas Entrada y Salida
+minutos_entrada <- sapply(observaciones$Entrada, convertir_a_minutos)
+minutos_salida <- sapply(observaciones$Salida, convertir_a_minutos)
+
+# Calcular la diferencia en minutos y agregarla como nueva columna
+observaciones <- observaciones %>%
+  mutate(TiempoParking = minutos_salida - minutos_entrada) %>%
+  select(-c(Entrada, Salida)) %>%
+  select(-c(Plazas))
+```
+
+```{r}
+# Filtrar las observaciones para quitar los NA en TiempoParking e ImporteTotal
+observaciones_filtradas <- na.omit(observaciones[c("ImporteTotal", "TiempoParking")])
+
+# Crear el gráfico de dispersión
+ggplot(observaciones_filtradas, aes(x = TiempoParking, y = ImporteTotal)) +
+  geom_point() +
+  theme_minimal() +
+  labs(x = "Tiempo de Parking (minutos)", y = "Importe Total (€)", 
+       title = "Importe según el tiempo de parking") +
+  geom_smooth(mapping = aes(x = TiempoParking, y = ImporteTotal))
+```
+
+```{r}
+df_parking <- observaciones[!is.na(observaciones$TiempoParking), ]
+
+hist(df_parking$TiempoParking,
+     breaks = 10,  
+     col = "blue",  
+     main = "Histograma de Duración en el Parking",  
+     xlab = "Duración en minutos",  
+     ylab = "Frecuencia"
+)
+```
+
+
+```{r}
+ggplot(observaciones_por_provincia,aes(x=Provincia,y=total,fill=Provincia))+geom_bar(stat = "identity")+labs(title = "En que provincias se usa más el parking", x = " Provincias", y = "Veces que se ha usado el parking")+geom_text(aes(label = total),position = position_dodge(width = 0.9), vjust = -0.5, size = 3)
+```
+
+

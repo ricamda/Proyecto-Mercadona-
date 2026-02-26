@@ -1,0 +1,133 @@
+title: "Localizacion"
+author: Pablo Quesada, Sebastian David Gutierrez, Hugo Frasquet, Mateo Mendez, Juan
+  Gomez y David Ricci
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(osmdata)
+library(httr)
+library(stringr)
+library(dplyr)
+
+mercadona_df <- read.csv('ficheros_posteriores/observaciones.csv', sep = ',', header = TRUE, stringsAsFactors = FALSE)
+
+mercadona_df <- mercadona_df %>%
+  select(c(ticket_id, Empresa, Direccion, CodigoPostal, Provincia, ImporteTotal)) %>%
+  distinct(ticket_id, .keep_all = TRUE)
+
+geocode_address <- function(address) {
+  response <- GET(
+    url = "https://nominatim.openstreetmap.org/search",
+    query = list(q = address, format = "json", limit = 1),
+    user_agent = "sebgu0305@gmail.com"  # Importante definir un User-Agent
+  )
+  
+  content_response <- content(response, "parsed", simplifyVector = FALSE)
+  
+  if (!is.null(content_response) && length(content_response) > 0) {
+    location <- content_response[[1]]
+    if (is.list(location) && !is.null(location$lon) && !is.null(location$lat)) {
+
+      return(c(lon = location$lon, lat = location$lat))
+    } else {
+      return(NA)
+    }
+  } else {
+    return(NA)
+  }
+}
+
+mercadona_df <- mercadona_df %>%
+  mutate(Direccion = sub(" S\\/N$", "", Direccion))
+
+mercadona_df <- mercadona_df %>%
+
+  mutate(coordenadas = map(paste(Direccion, CodigoPostal, Provincia, sep = ", "), geocode_address))
+
+
+mercadona_df_filtered <- mercadona_df %>%
+  group_by(Direccion, Provincia, coordenadas, CodigoPostal) %>%
+  summarise(ImporteTotal = mean(ImporteTotal, na.rm = TRUE)) %>%
+  mutate(
+    coordenadas = gsub("c\\(lon = (.*), lat = (.*)\\)", "\\1,\\2", coordenadas),
+    coordenadas = gsub(",", ", ", coordenadas),
+    coordenadas = gsub(" ", "", coordenadas)
+  ) %>%
+  separate(coordenadas, c("lon", "lat"), sep = ",", convert = TRUE) %>%
+  filter(!is.na(lon) & !is.na(lat))  # Eliminar filas con NA en lon o lat
+
+mercadona_df_filtered<-mercadona_df_filtered%>%mutate(Direccion = sub(" S\\/N$", "", Direccion))
+
+mercadona_df <- mercadona_df_filtered
+
+mercadona_df <- mercadona_df %>%
+  mutate(
+    lon = as.numeric(str_extract(coordenadas, "(?<=lon = \")-?\\d+\\.\\d+")),
+    lat = as.numeric(str_extract(coordenadas, "(?<=lat = \")-?\\d+\\.\\d+"))
+  ) %>%
+  filter(!is.na(lon) & !is.na(lat)) %>%
+  select(-coordenadas)
+
+mercadona_df[mercadona_df$Direccion == "C/ MENORCA (C.C. AQUA) 19","coordenadas"] <- list('c(lon = "-0.34547005926295615", lat = "39.45702052361771")')
+mercadona_df[mercadona_df$Direccion == "C/ JERÓNIMO MONSORIU 60","coordenadas"] <- list('c(lon = "-0.33943250336394853", lat = "39.46496837882039")')
+mercadona_df[mercadona_df$Direccion == "C/ GENERAL AVILÉS 79","coordenadas"] <- list('c(lon = "0.40343906785426364", lat = "39.48265872530307")')
+
+competidores_df <- read.csv('competidores.csv', sep = ',', header = TRUE, stringsAsFactors = FALSE)
+
+competidores_df$latitud <- gsub("[^0-9.]", "", competidores_df$row.names)
+competidores_df <- competidores_df %>%
+  mutate(row.names = gsub(";[0-9.]*", "", row.names)) %>%
+  rename(longitud = empresa.coordenadas) %>%
+  rename(competidores.nombres = row.names)
+
+outside_range <- competidores_df$longitud < -180 | competidores_df$longitud > 180
+problematic_rows <- which(outside_range)
+
+if (length(problematic_rows) > 0) {
+  cat("Filas con valores de longitud fuera del rango válido:\n")
+  print(competidores_df[problematic_rows, ])
+} else {
+  cat("No se encontraron valores de longitud fuera del rango válido.\n")
+}
+
+outside_range2 <- competidores_df$latitud < -90 | competidores_df$latitud > 90
+problematic_rows2 <- which(outside_range)
+
+if (length(problematic_rows2) > 0) {
+  cat("Filas con valores de longitud fuera del rango válido:\n")
+  print(competidores_df[problematic_rows2, ])
+} else {
+  cat("No se encontraron valores de longitud fuera del rango válido.\n")
+}
+
+filas_incorrectas <- competidores_df %>%
+  filter(longitud < -180 | longitud > 180)
+filas_incorrectas2 <- competidores_df %>%
+  filter(latitud < -90 | latitud > 90)
+
+calcular_competidores <- function(mercadona_df, competidores_df) {
+  distancias <- apply(mercadona_df, 1, function(merc_coord) {
+    apply(competidores_df, 1, function(comp_coord) {
+      distGeo(c(merc_coord["lon"], merc_coord["lat"]), 
+              c(comp_coord["longitud"], comp_coord["latitud"]))
+    })
+  })
+  
+  num_competidores <- apply(distancias, 1, function(dist_row) {
+    sum(dist_row <= 500)
+  })
+  
+  return(num_competidores)
+}
+
+num_competidores <- calcular_competidores(mercadona_df_filtered, competidores_df)
+print(num_competidores)
+
+print(competidores_df)
+`````

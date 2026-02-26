@@ -1,0 +1,71 @@
+---
+title: "Pregunta6"
+author: "Pablo Quesada, Sebastian David Gutierrez, Hugo Frasquet,
+  Mateo Mendez, Juan Gomez y David Ricci"
+date: "2024-04-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+¿Cómo varía el comportamiento de compra según la ubicación de la tienda?
+
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+```
+
+Para garantizar un análisis robusto de los datos y una respuesta efectiva a la pregunta planteada, es fundamental realizar una serie de pasos previos. Primero, es necesario realizar una limpieza de los datos para eliminar cualquier información irrelevante o inconsistente que no contribuya al objetivo del análisis.
+
+En este caso, partimos de un conjunto de datos que contiene información sobre compras, y nos centramos en analizar el comportamiento de las mismas según la ubicación. Por lo tanto, identificamos la variable "Provincia" como la principal, ya que nos permite distinguir la ubicación de cada compra. Además de esta variable, podemos tener otras como el importe total de la compra o los precios de los productos.
+
+Una vez sabemos nuestras variables de interés, hemos descartado cualquier información que no esté relacionada con el análisis de las compras por ubicación, como, por ejemplo, datos sobre clientes o detalles irrelevantes sobre los productos. Para garantizar esto, primero realizamos la limpieza del data frame. En este proceso, agrupamos los datos por provincia e importe total, sumando el número de veces que aparece cada importe total por provincia. Esto aseguró que cada registro en nuestro conjunto de datos representara un ticket individual, ya que de lo contrario tendríamos múltiples registros para cada ticket debido a la presencia de varios productos. 
+
+Con este proceso lo que conseguimos es considerar solo las dos variables que nos interesaban en nuestro análisis que son nuestra variable provincia que es cualitativa, y nuestra variable Importe Total que es cuantitativa.
+
+Dado que estamos interesados en realizar un análisis bivariante que nos de una conclusión sobre la relación entre la ubicación y el importe total de las compras, decidimos representar esta mediante un gráfico de dispersión utilizando la librería ggplot. Esta elección se debe a que estamos comparando una variable cualitativa (las provincias) con una variable numérica (los importes totales), y el gráfico de dispersión es una forma efectiva de visualizar esta relación.
+
+```{r}
+observaciones <- read_csv("./ficheros_posteriores/observaciones.csv")
+observaciones<- observaciones%>%select(-...1)
+observaciones2<-observaciones%>%group_by(ImporteTotal,Provincia)%>%
+  summarise(Total = sum(n()))
+observaciones2<-select(observaciones2,c(Provincia,ImporteTotal))
+ggplot(observaciones2,aes(Provincia,y=ImporteTotal))+geom_point()+coord_flip()+labs(title = "Relacion entre Provincias e importe Total", x = " Provincias", y = "Importe Total")
+#g
+```
+
+La conclusión del análisis del gráfico sugiere que, aunque Denia se destaque como el lugar donde se realizan las compras de mayor valor, Valencia también muestra compras significativamente elevadas y cercanas a ese máximo. Esta observación sugiere que Valencia podría tener un nivel económico similar o incluso superior al de Denia, a pesar de que Denia tenga la compra más alta en este conjunto de datos limitado.
+
+Sin embargo, para llegar a una conclusión más definitiva sobre las diferencias en el nivel económico entre Denia y Valencia, sería necesaria una muestra más amplia y equitativa de tickets en cada ubicación. Con un conjunto de datos más completo, podríamos realizar un análisis más preciso y exhaustivo que nos permita comparar de manera más precisa los valores de compra en todas las ubicaciones.
+
+En resumen, este análisis nos permite identificar patrones interesantes sobre el comportamiento de las compras según la ubicación, destacando la importancia de investigar más a fondo las razones detrás de estas diferencias en los valores de compra entre diferentes ubicaciones.
+
+#--------------------------------------------------------------------------------------------
+
+
+Otra variable para representar que nos ha parecido muy interesante su relación con la ubicación es el precio de cada producto individual.
+
+En este caso, seguiremos manteniendo la variable "Provincia" como la principal, ya que nos permite distinguir la ubicación de cada compra.
+
+Una vez sabemos nuestras variables de interés, hemos descartado cualquier información que no esté relacionada con el análisis de las compras por ubicación, como, por ejemplo, datos sobre clientes o detalles irrelevantes sobre los productos. Para garantizar esto, primero realizamos la limpieza del data frame. En este proceso, simplemente tendremos que realizar una operación de selección en la que tendremos solamente nuestras variables de interés.
+
+Con este proceso lo que conseguimos es considerar solo las dos variables que nos interesaban en nuestro análisis que son nuestra variable provincia que es cualitativa, y nuestra variable Importe de cada producto que es cuantitativa.
+
+Dado que estamos interesados de nuevo en realizar un análisis bivariante que nos dé una conclusión sobre la relación entre la ubicación y el importe por producto de las compras, decidimos representar esta mediante un gráfico de dispersión utilizando la librería ggplot. Esta elección se debe a que estamos comparando una variable cualitativa (las provincias) con una variable numérica (el importe por producto), y el gráfico de dispersión es una forma efectiva de visualizar esta relación.
+
+
+
+```{r}
+observaciones3<-select(observaciones,c(Provincia,Importe))
+ggplot(observaciones3,aes(x=Provincia,y=Importe))+geom_point()+coord_flip()+labs(title = "En qué provincias se compran productos más caros", x = " Provincias", y = "Importe por producto")
+```
+
+
+Al analizar el gráfico, podemos verificar si efectivamente donde se compran los productos más caros coincide con las regiones donde el importe total es más alto. Observamos que, si bien Denia destaca como el lugar donde se adquiere el producto más costoso, la ciudad de Valencia lidera en cuanto al promedio de precios y volumen de compras. Esto nos lleva a la conclusión de que, si estos datos se mantuvieran consistentes con una muestra más amplia y equitativa de tickets por provincia, podría sugerirse que el nivel de vida y los precios de los productos son más elevados en la capital.
+
+

@@ -1,0 +1,393 @@
+---
+title: "Efectos_dia_compra"
+output: html_document
+date: "r Sys.Date()"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+Pregunta 3:
+
+¿Cómo varía las compras entre días laborables y fines de semana?
+
+Introducción
+
+En esta pregunta intentaremos responder a la diferencia entre hacer la compra en distintos dias. 
+
+Para llevar a cabo esta investigación, adoptaremos un enfoque bivariante. Esta 
+metodología nos permitirá contrastar la variable de interés principal (el tipo 
+de día: entre semana o fin de semana) con otras variables del conjunto de datos, 
+tales como el importe total de compra, el uso del estacionamiento, entre otras.
+
+Es importante destacar que la variable principal en cuestión es de naturaleza
+categórica. Inicialmente, en el data frame no disponemos de una variable que 
+indique si la compra se realizó entre semana o el fin de 
+semana. Sin embargo, contamos con información de la fecha de compra (variable 
+"FechaCompra"), a partir de la cual obtendremos la variable de interés durante 
+el análisis.
+
+En primer lugar, procederemos a cargar los datos obtenidos durante la 
+importación de los tickets. Seguidamente, prepararemos el conjunto de datos 
+para su análisis, lo que incluirá la eliminación de variables irrelevantes y la
+creación de nuevas variables a partir de las que teníamos inicialmente. Por 
+último, presentaremos una serie de gráficos con el propósito de visualizar de 
+manera clara y comprensible las conclusiones extraídas del análisis de datos.
+
+
+```{r}
+# Cargam0s las bibrerias que vamos a usar.
+library(lubridate)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+```{r}
+# Leemos el fichero .csv con la información de todos los tickets.
+tickets <- read.csv("ficheros_posteriores/observaciones.csv")
+#head(tickets)
+```
+
+```{r}
+# Definimos un nuevo dataframe y lo preparamos para poder trabajar más 
+# fácilmente con el:
+tickets_dia <- tickets %>%
+  select(all_of(c("ticket_id", "Provincia","FechaCompra", "Plazas","Entrada", "Salida","ImporteTotal"))) %>% distinct()
+fecha <- as.Date(tickets_dia$FechaCompra)
+tickets_dia <- tickets_dia %>% mutate(dia_semana = weekdays(fecha))
+  
+
+tickets_dia <- tickets_dia %>%
+  mutate(tipo_dia = ifelse(dia_semana %in% c("viernes", "sábado", "domingo"), 
+                           "fin de semana", "entre semana"))
+```
+
+```{r}
+# Comparamos mediante la variable parcking:
+#Para ello creamos un dataframe con solo los tickets que han usado el parcking.
+tickets_con_parcking <- tickets_dia %>% na.omit(Plazas)
+
+# Ahora creamos un dataframe con la gente que usa el parcking entre semana y 
+# la gente que lo usa el fin de semana:
+
+parckin_finde <- filter(tickets_con_parcking, tipo_dia == "fin de semana")
+parckin_entre <- filter(tickets_con_parcking, tipo_dia == "entre semana")
+
+# Contar el número total de personas que usan el parking
+num_parck <- nrow(select(tickets_con_parcking, Plazas))
+
+# Mostrar el número total de personas que usan el parking
+cat("Número total de personas que usan el parking:", num_parck, "\n")
+
+# Contar el número total de personas que no usan el parking
+num_sin_parck <- nrow(filter(tickets_dia, is.na(Plazas)))
+
+# Mostrar el número total de personas que no usan el parking
+cat("Número total de personas que no usan el parking:", num_sin_parck, "\n")
+
+# Calcular el número total de tickets
+numero_tickets <- num_parck + num_sin_parck
+
+# Calcular la proporción de personas que usan el parking
+prop_parck <- num_parck / numero_tickets
+
+# Calcular la proporción de personas que no usan el parking
+prop_sin_parck <- num_sin_parck / numero_tickets
+
+# Mostrar las proporciones
+cat("Proporción de personas que usan el parking:", prop_parck* 100, "%.", "\n")
+cat("Proporción de personas que no usan el parking:", prop_sin_parck* 100, "%.", "\n")
+
+# Ahora vamos a obtener el número de gente que usa el parcking el fin de semana:
+num_parck_finde <- nrow(filter(tickets_con_parcking, 
+                               tipo_dia == "fin de semana"))
+# Vamos a obtener el número de gente que compra el fin de semana:
+num_finde <- nrow(filter(tickets_dia, tipo_dia == "fin de semana"))
+
+# Calcular la proporción de personas que usan el parking durante el fin de semana
+prop_parck_finde <- num_parck_finde / num_finde
+
+# Ahora vamos a obtener el número de gente que usa el parcking el fin de semana:
+num_parck_entre <- nrow(filter(tickets_con_parcking, 
+                               tipo_dia == "entre semana"))
+prop_parck_entre <- num_parck_entre / num_finde
+
+# Interpretar la proporción de personas que usan el parking durante el fin de semana
+cat("La proporción de personas que usan el parking durante el fin de semana es del", prop_parck_finde * 100, "%.", "\n")
+
+# Interpretar la proporción de personas que usan el parking entre semana
+cat("La proporción de personas que usan el parking entre semana es del", prop_parck_entre * 100, "%.", "\n")
+
+```
+En este apartado del trabajo hemos realizado un número de cálculos estadísticos
+respecto al uso del parcking según que tipo de dia sea.
+En primer lugar podemos observar que el porcentaje de gente que no usa el 
+parcking es considerablemente mayor al contrario. Seguidamente, encontramos que
+del porcentaje de gente que si usa el parcking es algo mayor entre semana.
+Sin embargo, podremos ver más claramente estas diferencias cuando representemos
+gráficamente estos cálculos.
+
+
+
+```{r}
+# Definir el orden de los días de la semana, ya que más tarde me va a ser útil
+# para la creación de gráficas:
+tickets_dia$dia_semana <- factor(tickets_dia$dia_semana, 
+                                  levels = 
+                                   c("lunes", "martes", "miércoles", 
+                                     "jueves", "viernes", "sábado", "domingo"),
+                                  ordered = TRUE)
+
+tickets_con_parcking$dia_semana <- factor(tickets_con_parcking$dia_semana, 
+                                  levels = c("lunes", "martes", "miércoles",
+                                             "jueves", "viernes", 
+                                             "sábado", "domingo"),
+                                  ordered = TRUE)
+```
+
+
+Visualización de datos:
+Seguidamente, pasaremos a explicar la visualización de los datos que hemos 
+analizado, con la finalidad de obtener una mejor comprensión de las conclusiones 
+obtenidas a partir de estos.
+
+Hemos visualizado todos los datos que componen los tickets de compra para así,
+poder hacer una selección sobre cuáles son aquellos que nos pueden ser 
+relevantes para responder de mejor manera a la pregunta planteada. Debido a que,
+encontramos una serie de datos sin ninguna relevancia para la resolución del 
+problema cómo por ejemplo: la dirección y el código postal del lugar donde se 
+realiza la compra, datos específicos sobre productos comprados…
+Además, queremos puntualizar que hemos agrupado aquellas variables importantes 
+para el problema que se plantea en un solo registro, de modo que así aseguramos 
+que cada registro representa un solo ticket, ya que de lo contrario tendríamos 
+múltiples registros para cada ticket.
+
+Con relación a las gráficas, hablaremos primeramente de la gráfica 1. Esta se 
+encuentra compuesta de dos variables, por una parte, la variable principal 
+‘dias_semana’ de tipo categórica. En un primer momento, no disponíamos de esta 
+variable, de modo que, la hemos obtenido a partir de la variable ‘fecha’. Por 
+otra parte,la segunda variable denominada 'ImporteTotal ' de tipo cuantitativa,
+indica el importe total de la compra realizada.
+
+En segundo lugar, hemos utilizado un gráfico de barras para representar estas 
+dos variables.
+Hemos seleccionado este tipo de gráfico debido a que representa con claridad 
+estas dos variables. Este nos permite realizar una fácil comparación de los 
+datos, de modo que al visualizarlos fácilmente, podemos realizar una buena
+interpretación de estos.
+Para representar este gráfico hemos dispuesto la variable 
+categórica en el eje de las abscisas y la variable 
+cualitativa en el eje de las ordenadas. Seguidamente en la variable 
+"ImporteTotal" hemos realizado la media, de modo que la gráfica resultante es la
+media de importe total que se realiza en las compras según el día de la semana 
+en el que se ha realizado la compra.
+
+```{r}
+# Creamos un gráfico de barras, comparo los dias de la semana y la media de lo
+# que se gasta en cada día.
+ggplot(tickets_dia, aes(x = dia_semana, y = ImporteTotal, 
+                        fill = factor(dia_semana))) +
+  geom_bar(stat = "summary", fun = "mean", position = "dodge") +
+  labs(x = "Día", y = "Gasto total", 
+       title = "Gasto medio según el día", fill = "Leyenda") +
+  theme_minimal()
+# Con este gráfico se puede observar que días se suele gastar más dinero de
+# media, siendo el jueves y el mircoles los días que más se gasta.
+```
+En primer lugar, el jueves se destaca como el día con el importe promedio más 
+alto de compras, mientras que el lunes muestra la media más baja.
+
+Al calcular la media de los importes de compra para los siete días, se obtiene 
+un valor aproximado de 38,2 euros. Sin embargo, solo los martes, miércoles 
+y jueves superan la media calculada.
+
+Por último, podemos encontrar que los dias laborables muestran una tendencia a 
+tener compras de mayor importe en comparación con los fines de semana. Esto 
+puede deberse a que la gente realiza compras de mayor importe durante estos
+dias, posiblemente debido a las necesidades diarias y la planificación de 
+las comidas.
+
+Estas conclusiones pueden ser valiosas para comprender los hábitos de compra 
+de los clientes a lo largo de la semana.
+
+
+Respecto a la segunda gráfica, teniendo en cuenta el depurado y analisis que
+hemos realizado antes de hacer la primera gráfica.
+Esta se encuentra compuesta de dos variables, por una parte, 
+la variable principal ‘dia_semana’ de tipo categórica, ya usada en la primera 
+gráfica, y por otra parte,la segunda variable de tipo cuantitativa, indica el 
+número de gente que va a comprar.
+
+En segundo lugar, vamos a usar el mismo tipo de gráfico que hemos usado en la 
+primera gráfica, ya que del mismo modo, estamos usando una variable categórica
+y una cualitativa, por lo que se aplica a la perfección a las necesidades y 
+características de este gráfico.
+
+```{r}
+ggplot(tickets_dia, aes(x = dia_semana, fill = dia_semana)) +
+  geom_bar(stat = "count", position = "dodge") +
+  labs(x = "Día de la semana", y = "Número de gente que va a comprar", 
+       title = "Número de gente que va a comprar según el dia") +
+  theme_minimal()
+```
+En conclusión, se observa que el sábado es el día con la mayor afluencia de 
+personas que van a comprar, mientras que el lunes muestra la menor cantidad.
+
+Al calcular la media de la cantidad de personas que van a comprar en los siete 
+días, se obtiene un valor aproximado de 50 personas. Sin embargo, es importante 
+destacar que todos los días se acercan bastante a esta media, lo que sugiere una
+distribución bastante uniforme.
+
+No se identifica un día en particular donde la cantidad de personas que van a 
+comprar sea significativamente menor que la media. Esto indica que, en general, 
+la afluencia de clientes se mantiene relativamente constante a lo largo de la 
+semana, con variaciones que no muestran ninguna tendencia clara ni significativa.
+
+
+En siguiente lugar, vamos a realizar el análisis del tercer gráfico.
+Este se encuentra compuesto de dos variables, por una parte, la variable 
+principal ‘dias_semana’ de tipo categórica, que ya hemos usado previamente
+en la primera gráfica. Por otra parte, en este caso, vamos a usar como segunda
+variable el número de veces que se usa el parcking, es decir, también es de tipo
+cuantitativa.
+
+Para estas dos variables nos hemos vuelto a decantar por el gráfico de barras, 
+ya que como hemos explicado antes, a pesar de ser un gráfico sencillo, se 
+adapta a la perfección a los tipos de variables que tratamos, por lo que, de 
+esta forma resulta un gráfico muy informativo y visual.
+```{r}
+# Creamos otro gráfico de barras, esta vez vamos a relacionar y comparar los 
+# dias que la gente usa el parcking:
+ggplot(tickets_con_parcking, aes(x = dia_semana, fill = dia_semana)) +
+  geom_bar(stat = "count", position = "dodge") +
+  labs(x = "Día de la semana", y = "Número de veces usados el parking", 
+       title = "Número de veces que se usa el parking") +
+  theme_minimal()
+```
+
+En primer lugar, se destaca que el sábado es el día con el mayor uso del 
+parcking, seguido de cerca por el jueves. Por otro lado, el domingo muestra la 
+menor cantidad de uso del estacionamiento, y teniendo en cuenta que la media de
+gente que va a comprar es relativamente constante todos los días es indicativo
+de que el domingo por alguna razón la gente usa considerablemente menos el
+parcking.
+
+Al calcular la media del uso del estacionamiento a lo largo de los siete días, 
+que es aproximadamente 10, se identifican los días que superan esta media. De 
+acuerdo con este análisis, se observa que el martes, jueves y sábado son los 
+días en que el uso del estacionamiento supera la media establecida.
+
+En conclusión obtenemos los comportamientos de uso del parcking de los clientes
+según el dia de la semana.
+
+
+Finalmente, la cuarta y última gráfica que vamos a representar está compuesta, 
+al igual que la primera y la segunda gráfica, de la variable "dias_semana" y la
+variable "ImporteTotal". Para realizar esta gráfica hemos seleccionado usar un
+gráfico de tipo boxplot. Hemos decicido usar este tipo debido a que da mucha 
+información de utilidiad y sirve para analizar la distribución de un conjunto 
+de datos y detectar posibles outliers.
+
+Al igual que en las demás gráficas, hemos distribuido la variable categórica en
+el eje de las abcisas y la cualitativa en el eje de las ordenadas.
+
+```{r}
+# Grafico boxplot, tendencia de gastos:
+ggplot(tickets_dia, aes(x = dia_semana, y = ImporteTotal, fill = dia_semana)) +
+  geom_boxplot() + labs(x = "Fecha de compra", y = "Gasto total", 
+                        title = "Tendencia de gasto total por tipo de día") +
+  theme_minimal()
+```
+Al observar y analizar el boxplot podemos extraer varias conclusiones 
+significativas.
+
+En primer lugar, al examinar la línea dentro de cada caja, que representa la 
+mediana de los importes, notamos que se mantiene bastante constante a lo largo
+de la semana. Esto sugiere que, en promedio, los importes de compra no varían 
+significativamente de un día a otro.
+
+En segundo lugar, los cuartiles, que dividen los datos ordenados en cuatro 
+partes iguales, nos dan una idea de la dispersión de los importes. Observamos 
+que la amplitud de las cajas varía, esto nos indica que, a mayor amplitud, mayor
+dispersión de los datos.
+
+Los bigotes del boxplot nos muestran la extensión de los datos más allá de los 
+cuartiles y nos ayudan a identificar la presencia de outliers. En este caso, 
+observamos la presencia de outliers en varios días, lo que indica compras 
+con un valor de importe considerablemente más alto respecto al importe medio.
+
+Además, notamos que la distribución de los datos no es simétrica. Los bigotes 
+tienden a extenderse más hacia arriba que hacia abajo, lo que sugiere una mayor 
+variabilidad en los importes más altos.
+
+Una observación interesante es la tendencia a que los importes de compra sean 
+más bajos los lunes en comparación con otros días de la semana. Esto podría 
+deberse a diferentes factores, como el comportamiento de compra de los 
+consumidores o las promociones de ventas semanales.
+
+En conclusión, el análisis del boxplot revela patrones de variabilidad y 
+tendencias en los importes de compra diarios en el supermercado.
+
+
+
+
+
+
+Graficas sobrantes:
+```{r}
+
+# Ahora vamos a crear un gráfico donde se agrupe lo que se gasta de media 
+# entre semana comparado con lo que se gasta de media el fin de semana:
+ggplot(tickets_dia, aes(x = tipo_dia, y = ImporteTotal, fill = factor(tipo_dia))) +
+  geom_bar(stat = "summary", fun = "mean", position = "dodge") +
+  labs(x = "Tipo de Día", y = "Gasto total", 
+       title = "Gasto medio según tipo de día", fill = "Leyenda") +
+  theme_minimal()
+
+# Realmente este gráfico es una agrupación del anterior en dos variables,
+# pero aunque sea simple, es perfecto para responder el punto principal de 
+# esta pregunta
+
+# Como hemos hecho anteriormente, ahora lo agrupamos en los dias de entre semana
+# y los de fin de semana, mediante un gráfico de barras:
+
+ggplot(tickets_con_parcking, aes(x = tipo_dia, fill = tipo_dia)) +
+  geom_bar(stat = "count", position = "dodge") +
+  labs(x = "Día de la semana", y = "Número de veces que se aparca", 
+       title = "Número de veces que se aparca, según el tipo de dia.") +
+  theme_minimal()
+
+# De nuevo un sencillo gráfico que resume a la perfección lo que estamos 
+# buscando.
+# Nueva gráfica dividida por dias de la semana, provincias, y gasto medio.
+# Una gráfica un poco más complicada, pero muy visual y con mucha información.
+
+ggplot(tickets_dia, aes(x = Provincia, y = ImporteTotal, fill = dia_semana)) +
+  geom_bar(stat = "summary", fun = "mean", position = "dodge") +
+  labs(x = "Día de la semana", y = "Gasto medio", title = 
+         "Gasto medio según día en cada ciudad", fill = "Leyenda") +
+  theme_minimal() + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Realizamos la misma gráfica pero simplificandola a las dos variables objetivo:
+ggplot(tickets_dia, aes(x = Provincia, y = ImporteTotal, fill = tipo_dia)) +
+  geom_bar(stat = "summary", fun = "mean", position = "dodge") +
+  labs(x = "Día de la semana", y = "Gasto medio", title = 
+         "Gasto medio según día en cada ciudad", fill = "Leyenda") +
+  theme_minimal() + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Gráfico de densidad:
+ggplot(tickets_dia, aes(x = ImporteTotal, fill = tipo_dia)) + 
+  geom_density(alpha = 0.5) +
+  labs(x = "Importe total", y = "Densidad", 
+       title = "Distribución del importe total por tipo de día") +
+  theme_minimal()
+```
+

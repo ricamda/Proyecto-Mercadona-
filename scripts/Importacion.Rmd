@@ -1,0 +1,392 @@
+---
+title: "Importacion - ProyectoTD2024"
+author: Pablo Quesada, Sebastian David Gutierrez, Hugo Frasquet,
+  Mateo Mendez, Juan Gomez y David Ricci.
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(dplyr)
+library(stringr)
+library(tidyverse)
+```
+
+```{python}
+# Codigo de modificacion de tickets
+import os
+import re
+
+class Ticket:
+    def __init__(self, file_path):
+        self.file_path = file_path
+        self.empresa = ''
+        self.direccion = ''
+        self.codigo_postal = ''
+        self.provincia = ''
+        self.telefono = ''
+        self.fecha = ''
+        self.hora = ''
+        self.numero_operacion = ''
+        self.factura_simplificada = ''
+        self.parking = {}
+        self.items = list()
+        self.importe_total = ''
+        self._process_ticket()
+
+
+
+    def _process_ticket(self):
+        with open(self.file_path, 'r', encoding='latin1') as file:
+            lines = file.readlines()
+        
+        # Definimos la linea donde empiezan los productos
+        inicio_productos = lines[7]
+        
+        # Buscamos la ultima linea de productos
+        # Compilar la expresión regular para buscar la línea que contiene "TOTAL (€)"
+        total_pattern = re.compile(r"TOTAL \(\x80\) \d+,\d{2}")
+        indice_total = None
+        encontrado_indice_total = False
+
+        # Iterar sobre las líneas para encontrar la coincidencia
+        for i, line in enumerate(lines):
+            if total_pattern.search(line) and not encontrado_indice_total:
+                indice_total = i
+                encontrado_indice_total = True  # Encontramos la línea, podemos salir del bucle
+
+        if indice_total is not None and indice_total >= 2:
+            if 'PARKING' in lines[indice_total - 2]:
+                self._process_parking(lines[indice_total - 2], lines[indice_total - 1])
+                indice_productos_fin = indice_total - 2  # Ajustar el final para excluir el parking
+            else:
+                indice_productos_fin = indice_total
+            
+            self.items = self._extraer_productos(lines, 7, indice_productos_fin)
+        else:
+            self.items = []
+
+        
+        # Asumimos que cada elemento que necesitamos está en su propia línea y en el orden esperado
+        # La primera línea contiene la empresa, y la segunda la dirección
+        self.empresa = lines[0].strip()
+        self.direccion = lines[1].strip()
+        
+        # La tercera línea contiene el código postal y la provincia
+        codigo_postal_provincia = lines[2].strip().split(' ', 1)
+        self.codigo_postal = codigo_postal_provincia[0].strip()
+        self.provincia = codigo_postal_provincia[1].strip()
+
+        # La cuarta línea contiene la palabra 'TELÉFONO' seguida por el número
+        telefono_parts = lines[3].strip().split(' ')
+        self.telefono = telefono_parts[1].strip() if len(telefono_parts) > 1 else ''
+
+        # La quinta línea contiene la fecha, la hora y el número de operación
+        quinta_linea_partes = lines[4].strip().split()
+        self.fecha = quinta_linea_partes[0].strip()
+        self.hora = quinta_linea_partes[1].strip()
+        self.numero_operacion = quinta_linea_partes[-1].strip() if len(quinta_linea_partes) > 3 else ''
+        
+        # La sexta línea contiene la factura simplificada
+        sexa_linea_partes = lines[5].strip().split(' ')
+        self.factura_simplificada = sexa_linea_partes[2]
+        
+        # Sabemos que la variable 'indice_total' representa la línea después de la última línea de             productos
+        importe_total_partes = lines[indice_total].strip().split(' ')
+        self.importe_total = importe_total_partes[2]
+        
+
+    
+    def _process_parking(self, parking_info_line, parking_time_line):
+        # Extraer y procesar datos de parking
+        parking_info_pattern = re.compile(r'(\d)PARKING (\d+,\d{2})')
+        parking_time_pattern = re.compile(r'ENTRADA\s+(\d{2}:\d{2})\s+SALIDA\s+(\d{2}:\d{2})')
+
+        info_match = parking_info_pattern.search(parking_info_line)
+        time_match = parking_time_pattern.search(parking_time_line)
+
+        if info_match and time_match:
+            self.parking['plazas'] = int(info_match.group(1))
+            self.parking['coste'] = float(info_match.group(2).replace(',', '.'))
+            self.parking['entrada'] = time_match.group(1)
+            self.parking['salida'] = time_match.group(2)
+
+        
+
+    def _extraer_productos(self, lines, inicio, fin):
+        productos = []
+        decimal_pattern = re.compile(r'\d+,\d{2}')
+        peso_precio_pattern = re.compile(r'(\d+,\d+)\s*kg\s*(\d+,\d+)\s*\x80/kg\s*(\d+,\d+)')
+
+        i = inicio
+        while i < fin:
+            linea = lines[i].strip()
+            
+            if "PESCADO" in linea:
+                # Procesar los productos de pescado hasta encontrar otra sección o el final de la lista
+                i += 1  # Saltar la línea 'PESCADO'
+                while i < fin and "TOTAL" not in lines[i] and not lines[i].strip().startswith('PESCADO'):
+                    descripcion = lines[i].strip()  # Tomar la descripción de la línea actual
+                    i += 1  # Avanzar a la línea de peso y precio
+                    match = peso_precio_pattern.search(lines[i])
+                    if match:
+                        # Si se encuentra la información de peso y precio, añadir al producto
+                        peso, precio_por_kilo, importe = match.groups()
+                        productos.append({
+                            "cantidad": None,  # No hay cantidad para los productos de pescado
+                            "descripcion": descripcion,
+                            "peso": float(peso.replace(',', '.')),
+                            "precio_por_kilo": float(precio_por_kilo.replace(',', '.')),
+                            "precio_unitario": None,  # No hay precio unitario para los productos de pescado
+                            "importe": float(importe.replace(',', '.'))
+                        })
+                    i += 1  # Avanzar para procesar el siguiente producto de pescado o llegar al 'TOTAL'
+                    continue
+            
+            
+            
+            
+            cantidad = int(linea[0]) if linea[0].isdigit() else None
+            descripcion = ''
+            precio_unitario = None
+            importe = None
+
+            precios = decimal_pattern.findall(linea)
+            if cantidad is not None:
+                if cantidad > 1 and len(precios) == 2:
+                    # Si hay dos precios y la cantidad es mayor que 1, el primero es el precio unitario, el segundo es el importe
+                    precio_unitario = float(precios[0].replace(',', '.'))
+                    importe = float(precios[1].replace(',', '.'))
+                elif cantidad == 1 and precios:
+                    # Si la cantidad es 1 y hay un precio, este es el importe (y el precio unitario)
+                    importe = float(precios[0].replace(',', '.'))
+                    precio_unitario = importe
+
+            # Comprobamos si la siguiente línea contiene información de peso y precio por kilo
+            if i + 1 < fin:
+                next_line = lines[i + 1].strip()
+                match = peso_precio_pattern.match(next_line)
+                if match:
+                    # La siguiente línea tiene información de peso, por lo que la actual es la descripción
+                    descripcion = linea[1:].strip()
+                    # Extraemos el peso, precio por kilo e importe de la siguiente línea
+                    peso, precio_por_kilo, importe_extra = match.groups()
+                    peso = float(peso.replace(',', '.'))
+                    precio_por_kilo = float(precio_por_kilo.replace(',', '.'))
+                    importe = float(importe_extra.replace(',', '.'))
+                    i += 1  # Incrementamos el índice ya que hemos procesado la siguiente línea
+                else:
+                    # Si no hay información de peso en la siguiente línea, la descripción va hasta el último precio
+                    descripcion_end_index = len(linea)
+                    if precios:
+                        descripcion_end_index = linea.rfind(precios[-1]) - 1
+                    descripcion = linea[1:descripcion_end_index].strip()
+            else:
+                descripcion = linea[1:].strip()  # La descripción es toda la línea si no hay precios
+
+            item = {
+                "cantidad": cantidad,
+                "descripcion": descripcion,
+                "peso": peso if 'peso' in locals() else None,  # Uso de locals() para evitar referencia antes de asignación
+                "precio_por_kilo": precio_por_kilo if 'precio_por_kilo' in locals() else None,
+                "precio_unitario": precio_unitario,
+                "importe": importe
+                }
+            productos.append(item)
+            i += 1  # Pasamos a la siguiente línea para continuar el procesamiento
+
+        return productos
+
+    def write_to_file(self, folder_path):
+        if not folder_path.endswith(os.path.sep):
+            folder_path += os.path.sep
+
+        # Construir el nombre del nuevo archivo añadiendo 'modificado' antes de la extensión del archivo
+        base, ext = os.path.splitext(self.file_path)
+        base = os.path.basename(base)  # Extrae solo el nombre del archivo sin la ruta
+        new_file_path = f"{folder_path}{base}_modificado{ext}"
+        
+        with open(new_file_path, 'w', encoding='latin1') as file:
+            # Escribir los detalles del ticket
+            file.write(self.empresa + '\n')
+            file.write(self.direccion + '\n')
+            file.write(self.codigo_postal + '\n')
+            file.write(self.provincia + '\n')
+            file.write(self.telefono + '\n')
+            file.write(self.fecha + '\n')
+            file.write(self.hora + '\n')
+            file.write(self.numero_operacion + '\n')
+            file.write(self.factura_simplificada + '\n')
+            if self.parking:
+                file.write(f"{self.parking['plazas']} {self.parking['coste']} {self.parking['entrada']} {self.parking['salida']}\n")
+            file.write("Cantidad-Peso-Descripcion-Precio Unitario-Precio Por Kilo-Importe\n")
+            
+            # Escribir los items
+            for item in self.items:
+                line = (
+                    f"{item.get('cantidad', '')}-"
+                    f"{item.get('peso', '')}-"
+                    f"{item['descripcion']}-"
+                    f"{item.get('precio_unitario', '')}-"
+                    f"{item.get('precio_por_kilo', '')}-"
+                    f"{item.get('importe', '')}\n"
+                )
+                file.write(line)
+                
+            file.write(self.importe_total + '\n')
+    
+    
+    def display_info(self):
+        print(f"Empresa: {self.empresa}")
+        print(f"Dirección: {self.direccion}")
+        print(f"Código Postal: {self.codigo_postal}")
+        print(f"Provincia: {self.provincia}")
+        print(f"Teléfono: {self.telefono}")
+        print(f"Fecha: {self.fecha}")
+        print(f"Hora: {self.hora}")
+        print(f"Número de operación: {self.numero_operacion}")
+        print(f"Factura simplificada: {self.factura_simplificada}")
+        if self.parking:
+            print(f"{self.parking['plazas']} {self.parking['coste']} {self.parking['entrada']} {self.parking['salida']}") 
+        for item in self.items:
+            print(f"- {item}")
+
+
+directorio = 'data'  # Directorio donde están los archivos .txt
+directorio_destino = 'data/data_modificada'  # Directorio donde se guardarán los archivos modificados
+
+# Asegurarse de que el directorio de destino existe, si no, crearlo
+if not os.path.exists(directorio_destino):
+    os.makedirs(directorio_destino)
+
+# Iterar sobre todos los archivos en el directorio fuente
+for file_name in os.listdir(directorio):
+    if file_name.endswith(".txt"):
+        file_path = os.path.join(directorio, file_name)  # Construir la ruta completa del archivo
+        folder_path = directorio_destino  # Establecer el directorio destino
+        
+        # Crear una instancia de Ticket y procesar el archivo
+        ticket = Ticket(file_path)
+        
+        # Opcional: Mostrar la información del ticket
+        # ticket.display_info()
+        
+        # Escribir el archivo modificado en el directorio de destino
+        ticket.write_to_file(folder_path)
+
+```
+
+```{r}
+# Función para reemplazar "None" por NA y convertir a numérico
+clean_and_convert <- function(value) {
+  if (value == "None") {
+    return(NA)
+  } else {
+    value <- gsub(",", ".", value, fixed = TRUE)
+    return(as.numeric(value))
+  }
+}
+
+# Función para limpiar la descripción
+clean_description <- function(description) {
+  pattern <- "(\\d+\\,\\d+)(?!%)$"
+  return(str_trim(str_replace(description, pattern, "")))
+}
+
+# Función para procesar cada archivo
+process_file <- function(file) {
+  lines <- read_lines(file, locale = locale(encoding = "latin1"))
+  
+  # Extraemos la información de cabecera
+  cabecera <- tibble(
+    Empresa = lines[1],
+    Direccion = lines[2],
+    CodigoPostal = lines[3],
+    Provincia = lines[4],
+    Telefono = lines[5],
+    FechaCompra = lines[6],
+    HoraOperacion = lines[7],
+    NumeroOperacion = lines[8],
+    FacturaSimplificada = lines[9]
+  )
+  
+  # Información de parking si aplica
+  if (substr(lines[10], 1, 1) != "C") {
+    parking_info <- str_split(lines[10], " ")[[1]]
+    parking <- tibble(
+      Plazas = as.integer(parking_info[1]),
+      Coste = as.numeric(parking_info[2]),
+      Entrada = parking_info[3],
+      Salida = parking_info[4]
+    )
+  } else {
+    parking <- tibble(Plazas = NA_integer_, Coste = NA_real_, Entrada = NA_character_, Salida = NA_character_)
+  }
+  
+  # Determinar la línea inicial de productos
+  start_line <- if (!is.na(parking$Plazas)) 11 else 10
+  end_line <- length(lines) - 1  # Excluir la última línea del importe total
+  productos_lines <- lines[start_line:end_line]
+  
+  productos_df <- tibble(
+    Cantidad = NA,
+    Peso = NA,
+    Descripcion = NA_character_,
+    PrecioUnitario = NA,
+    PrecioPorKilo = NA,
+    Importe = NA
+  )
+  
+  for (i in 1:length(productos_lines)) {
+    producto_info <- str_split(productos_lines[i], "-", simplify = TRUE)
+    descripcion <- clean_description(producto_info[3])
+    
+    if (grepl("Descripcion", descripcion, ignore.case = TRUE)) {
+      next  # Saltar al siguiente ciclo del bucle
+    }
+    
+    if (!grepl("ESCADO", descripcion, ignore.case = TRUE)) {
+      productos_df <- productos_df %>%
+        add_row(
+          Cantidad = clean_and_convert(producto_info[1]),
+          Peso = clean_and_convert(producto_info[2]),
+          Descripcion = descripcion,
+          PrecioUnitario = clean_and_convert(producto_info[4]),
+          PrecioPorKilo = clean_and_convert(producto_info[5]),
+          Importe = clean_and_convert(producto_info[6])
+        )
+    }
+  }
+  
+  productos_df <- productos_df[-1,]  # Elimina la fila inicial de NA
+  importe_total <- as.numeric(gsub(",", ".", lines[length(lines)], fixed = TRUE)) 
+  productos_df$ImporteTotal <- importe_total  # Asignar importe total a todas las filas
+
+  # Unimos la información de cabecera, parking, productos y agregamos importe total
+  ticket_df <- bind_rows(lapply(1:nrow(productos_df), function(i) {
+    producto_actual <- productos_df[i, ]
+    cbind(cabecera, parking, producto_actual)
+  }))
+  
+  return(ticket_df)
+}
+
+# Definimos la ruta de la carpeta con los archivos
+path <- "data/data_modificada"
+
+# Obtenemos una lista de todos los archivos .txt en la carpeta
+files <- list.files(path, pattern = "[.]txt$", full.names = TRUE)
+
+# Procesamos todos los archivos y combinamos los resultados
+observaciones <- bind_rows(lapply(files, process_file), .id = "ticket_id")
+
+# Mostramos los primeros registros del data.frame final
+print(head(observaciones))
+
+
+write.csv(observaciones, 'ficheros_posteriores/observaciones.csv')
+```

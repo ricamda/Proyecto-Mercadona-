@@ -1,0 +1,107 @@
+---
+title: "Efectos_Parking - ProyectoTD2024"
+author: Pablo Quesada, Sebastian David Gutierrez, Hugo Frasquet,
+  Mateo Mendez, Juan Gomez y David Ricci.
+date: "r Sys.Date()"
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readr)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(tidyr)
+
+observaciones <- read_csv("./ficheros_posteriores/observaciones.csv")
+```
+¿Existen patrones de compra según la hora del día?
+
+```{r}
+#Creamos el df con las variables que nos interesan para nuestro estudio
+df3 <- observaciones %>% select(c(...1, ticket_id,FechaCompra,HoraOperacion,
+                                  NumeroOperacion,Plazas, Cantidad, Descripcion,
+                                  PrecioUnitario, PrecioPorKilo,Importe,ImporteTotal))
+```
+
+Agrupamos todos los tickets segun su id, después creamos un data frame con las 
+variables Hora, ticket id y la cantidad de productos comprados en cada ticket
+llamado n, además creamos una nueva variable que sean las posibles franjas horarias
+de compra, y se las asignamos a cada ticket segun su HoraOperacion. Por último
+hacemos un diagrama de barras para observar la frecuencia a la que la gente va a
+hacer la compra.
+```{r}
+datos_agrupados <- df3 %>% group_by(ticket_id)
+productos_por_ticket <- summarise(datos_agrupados, n= n(), HoraOperacion)
+a<- unique(productos_por_ticket)
+
+
+a$HoraOperacion <- as.POSIXct(a$HoraOperacion, format = "%H:%M:%S")
+
+hora_inicio <- as.POSIXct("09:00:00", format = "%H:%M:%S")  
+hora_fin <- as.POSIXct("21:00:00", format = "%H:%M:%S")     
+intervalos_horas <- seq(hora_inicio, hora_fin, by = "hour")
+
+# Crea un vector con los nombres de los intervalos
+nombres_intervalos <- paste0(format(intervalos_horas, "%H:%M"), " - ", format(intervalos_horas + 3600, "%H:%M"))
+print(nombres_intervalos)
+# Asigna cada hora en 'hora_compra' a su respectivo intervalo
+a$intervalo_hora <- cut(a$HoraOperacion, breaks = "hour", labels = nombres_intervalos, right = FALSE)
+library(lubridate)
+
+# Extraer solo la hora de la columna HoraOperacion
+a$hora <- hour(a$HoraOperacion)
+
+# Suponiendo que 'intervalo_hora' es una variable categórica con valores como "09:00 - 10:00", "10:00 - 11:00", etc.
+
+# Crear un nuevo conjunto de datos con 'intervalo_hora' convertida en variable numérica
+
+ggplot(data = a, aes(x = hora)) +
+  geom_histogram(color = "black", fill = "green", bins = 13) +  # Usar bins = 13 para representar horas de 9 a 21
+  labs(title = "Distribución de compras por hora", x = "Hora", y = "Frecuencia") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  scale_x_continuous(breaks = 9:21, labels = paste(9:21, ":00", sep = ""))
+
+```
+
+
+Hacemos un nuevo data frame donde incluimos las variables del data frame anterior 
+junto con el importe total de cada compra. Y hemos realizado una grafica en la que
+relacionamos el importe total con las franjas horarias.
+En este diagrama de puntos cada punto representa una compra y la distancia a la que 
+se encuentre del eje y es su importe total.
+
+
+```{r}
+datos_agrupados <- df3 %>% group_by(ticket_id)
+productos_por_ticket2 <- summarise(datos_agrupados, n= n(), HoraOperacion, ImporteTotal)
+gbn<- unique(productos_por_ticket2)
+# Importar la columna 'intervalo_hora' del dataframe 'a' al dataframe 'gbn'
+gbn$intervalo_hora <- a$intervalo_hora
+
+# Mostrar las primeras filas del dataframe 'gbn' con la columna importada
+head(gbn)
+
+# Suponiendo que tienes un dataframe llamado 'datos' que contiene el importe total del ticket y el intervalo horario
+
+
+  
+# Crear el gráfico de dispersión
+ggplot(gbn, aes(x = intervalo_hora, y = ImporteTotal)) +
+  geom_boxplot(color = "red") +
+  labs(title = "Relación entre intervalo horario e importe total del ticket", 
+       x = "Importe Total del Ticket", y = "Intervalo horario") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+
+
+
+
+

@@ -1,0 +1,253 @@
+---
+title: "Trabajo Final"
+author: "Sebastian Gutiérrez"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: paper
+---
+
+# Proyecto Tratamiento de Datos 2024
+
+## 1.Introduccion
+
+Este proyecto ha sido realizado por el grupo M de la asignatura de Tratamiento de los Datos del grado Ciencia de Datos, ofrecido por la Universitat de Valencia. Los miembros del grupo son:
+
+\- Pablo Quesada Peyró (portavoz)
+
+\- Sebastian David Gutierrez Ferreira
+
+\- Hugo Frasquet García
+
+\- Mateo Méndez Colino
+
+\- Juan Gómez Díaz
+
+\- David Ricci Cambronero
+
+### 1.1.Contexto y Relevancia del Análisis de Datos
+
+La era de la gran data ha marcado un punto de inflexión en la forma en que las empresas entienden sus operaciones, mercados y consumidores. Específicamente, el análisis de los tickets de compra se ha revelado como un medio excepcional para observar los hábitos de consumo y las preferencias de los clientes, brindando datos esenciales para la optimización de la cadena de suministro, el desarrollo de estrategias de marketing y la mejora de la experiencia general de compra.
+
+### 1.2.Descripción del Proyecto
+
+En este contexto se sitúa nuestro proyecto ProyectoTD2024 del Grupo M, el cual se ha abocado al estudio pormenorizado de los tickets de compra de Mercadona, uno de los supermercados de mayor renombre en España. Para procesar y estructurar los datos de los tickets, originalmente en formato PDF, hemos aplicado métodos avanzados de ciencia de datos utilizando Jupyter Notebook, beneficiándonos de herramientas programáticas proporcionadas por nuestros instructores y adaptadas por nuestro equipo. La conversión de estos datos es el primer paso crítico para una extracción efectiva de información.
+
+### 1.3 Metodología y Herramientas
+
+El procesamiento preliminar y la transcripción de datos a un formato analizable ha sido el precursor de un análisis exhaustivo realizado en Python, utilizando la herramienta Spyder para limpiar los datos.
+
+### 1.4 Objetivos Analíticos
+
+El alcance del estudio comprende desde el análisis primario de los datos hasta la extracción de indicadores clave de negocio. Incluye la comparación del volumen y tipo de productos comprados entre tickets con acceso a estacionamiento y aquellos sin acceso, la investigación de patrones de compra según la hora del día, y el análisis de diferencias entre patrones de compra en días laborables y fines de semana. El enfoque no se limita a la identificación de patrones, sino que también busca comprender a profundidad las preferencias y comportamientos de los clientes de Mercadona.
+
+### 1.5. Preguntas de Investigación
+
+En este proyecto presentamos la respuesta a las siguientes interrogantes:
+
+-   ¿Cómo afecta el estacionamiento a las compras?
+-   ¿Existen patrones de compra según la hora del día?
+-   ¿Cómo varía las compras entre días laborables y fines de semana?
+-   ¿Existe alguna correlación entre la demografía de la zona y los productos comprados?
+-   ¿Afecta la competencia cercana al comportamiento de compras en distintas ubicaciones?
+-   ¿Cómo varía el comportamiento de compra según la ubicación de la tienda?
+
+### 1.6. Gestión de Datos y Limpieza
+
+Una parte crucial de nuestro proceso ha sido la limpieza de datos y el tratamiento de los registros incompletos para garantizar la fiabilidad y exactitud de nuestras conclusiones. Para ello, utilizamos Python y desarrollamos un programa que recogía todos los tickets en formato de texto de la carpeta de almacenamiento y los procesaba para obtener datos limpios, que luego se escribían en otro archivo de texto para su posterior análisis.
+
+Durante este proceso, tomamos varias precauciones fundamentales para trabajar con los datos de forma eficaz. En primer lugar, fue crucial utilizar varias herramientas digitales para determinar cómo estaban codificados los archivos. Esto nos llevó a descubrir que necesitábamos leer los archivos de texto con codificación = latin1 para evitar problemas de codificación.
+
+Observamos que todos los tickets seguían un patrón similar en cuanto a los datos no relacionados con los productos y el IVA aplicado. Las líneas iniciales de cada ticket incluían la ubicación de la tienda Mercadona, su número de teléfono, la fecha y hora de la compra, el número de operación y la factura simplificada. Posteriormente, se presentaban los detalles de los productos adquiridos. Esta fase resultó ser la más complicada en términos de limpieza de datos, ya que encontramos varios patrones correspondientes a distintos tipos de productos. Por ejemplo, la información relativa al pescado y la fruta seguía formatos diferentes: La fruta iba precedida de un número entero, mientras que el pescado no. Además, cuando se mostraba información específica sobre el pescado, aparecía una nueva cabecera que indicaba «PESCADO».
+
+Antes de presentar el importe total de la compra, si el cliente había utilizado aparcamiento, se incluía la hora de llegada, la tarifa de aparcamiento y la hora de salida. Es importante señalar que esta tarifa estaba vinculada a la duración del aparcamiento. Tras mostrar el importe de la compra, se proporcionaba información sobre los impuestos aplicados y el método de pago utilizado.
+
+### 1.7.Contribución del Proyecto
+
+El presente informe constituye una exhaustiva exposición de los procedimientos, técnicas, desafíos y estrategias inherentes al proyecto. Su objetivo principal es documentar el proceso llevado a cabo, desde la recolección inicial de datos hasta la generación de conclusiones significativas. Además, se ofrece un análisis detallado de los resultados obtenidos y su relevancia en la estrategia comercial y la toma de decisiones de Mercadona.
+
+En este sentido, se detallan los métodos y herramientas empleadas para la limpieza, procesamiento y análisis de datos, resaltando la importancia de cada paso en la obtención de información fiable y significativa. Se describen los desafíos encontrados durante el proceso, así como las estrategias desarrolladas para superarlos, enfatizando la importancia de la adaptabilidad y la creatividad en entornos de análisis de datos complejos.
+
+En resumen, este informe constituye una herramienta invaluable para comprender el proceso de tratamiento de datos en el contexto de la ciencia de datos, así como su impacto en la toma de decisiones estratégicas en el ámbito empresarial.
+
+## 2.Exploración y Visualización de Datos
+
+Una vez completado el proceso de carga y limpieza de los datos, en el cual hemos creado el data frame que utilizaremos en nuestro análisis, disponemos ahora de los datos con los que trabajaremos en adelante. A partir de estos datos, llevamos a cabo un proceso de lluvia de ideas para determinar cómo podemos extraer la máxima información útil posible. Después de investigar cuáles eran las mejores opciones considerando nuestro data frame, seleccionamos algunas preguntas a las que responderemos, y en base a las cuales guiaremos nuestro proceso de exploración y visualización de datos.
+
+### 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### 2.2.1
+
+```{r Pregunta 1}
+
+```
+
+### 2.2.2
+
+¿Existen patrones de compra según la hora del día?
+
+```{r Pregunta 2}
+library(tidyverse)
+#Creamos el df con las variables que nos interesan para nuestro estudio
+df3 <- observaciones %>% select(c(...1, ticket_id,FechaCompra,HoraOperacion,
+                                  NumeroOperacion,Plazas, Cantidad, Descripcion,
+                                  PrecioUnitario, PrecioPorKilo,Importe,ImporteTotal))
+```
+
+2.2.1 ¿Cómo influye la hora del día en las compras? \textbf{Análisis univariante}
+
+Para comenzar con el análisis de esta pregunta creímos conveniente realizar inicialmente un análisis univariante, para ellos hemos tenido en cuenta que la variable a analizar era la hora del día a la que se compraban las cosas, por lo que debíamos tener en cuenta que es una variable continua. Es necesario conocer con que tipo de datos estamos trabajando, pues para realizar tanto el análisis univariante como el bivariante, deberemos utilizar unas funciones u otras a la hora de la representación de gráficas y de la extracción de información. Como ya hemos dicho, la variable con la que haremos el análisis univariante en este caso es la variable hora, de tipo continua. Primeramente, creamos un nuevo data frame en el que únicamente incluimos las variables que nos pueden ser de utilidad para realizar el análisis univariante. En este nuevo data frame hemos incluido la variable HoraOperacion que indica a que hora se ha creado cada factura, el idticket que nos servirá para agrupar todos los productos que pertenecen al mismo ticket. Y por último hemos creado una nueva variable llamada hora donde extraemos únicamente la hora( es decir, si la compra fue a las 9:50:00, en esta columna estará únicamente el 9). Una vez tenemos a nuestra disposición el data frame con los datos necesarios, hemos representado una gráfica donde mostramos la frecuencia en la que la gente va a comprar, únicamente teniendo en cuenta la hora, y obviando así los minutos y segundos. Para hacer esta representación hemos representado un histograma utilizando la librería ggplot2. Este análisis univariante nos servirá también para sacar conclusiones más claras al realizar el análisis bivariante que comentaremos a continuación.
+
+```{r}
+datos_agrupados <- df3 %>% group_by(ticket_id)
+productos_por_ticket <- summarise(datos_agrupados, n= n(), HoraOperacion)
+a<- unique(productos_por_ticket)
+
+
+a$HoraOperacion <- as.POSIXct(a$HoraOperacion, format = "%H:%M:%S")
+
+hora_inicio <- as.POSIXct("09:00:00", format = "%H:%M:%S")  
+hora_fin <- as.POSIXct("21:00:00", format = "%H:%M:%S")     
+intervalos_horas <- seq(hora_inicio, hora_fin, by = "hour")
+
+# Crea un vector con los nombres de los intervalos
+nombres_intervalos <- paste0(format(intervalos_horas, "%H:%M"), " - ", format(intervalos_horas + 3600, "%H:%M"))
+print(nombres_intervalos)
+# Asigna cada hora en 'hora_compra' a su respectivo intervalo
+a$intervalo_hora <- cut(a$HoraOperacion, breaks = "hour", labels = nombres_intervalos, right = FALSE)
+library(lubridate)
+
+# Extraer solo la hora de la columna HoraOperacion
+a$hora <- hour(a$HoraOperacion)
+
+# Suponiendo que 'intervalo_hora' es una variable categórica con valores como "09:00 - 10:00", "10:00 - 11:00", etc.
+
+# Crear un nuevo conjunto de datos con 'intervalo_hora' convertida en variable numérica
+
+ggplot(data = a, aes(x = hora)) +
+  geom_histogram(color = "black", fill = "green", bins = 13) +  # Usar bins = 13 para representar horas de 9 a 21
+  labs(title = "Distribución de compras por hora", x = "Hora", y = "Frecuencia") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  scale_x_continuous(breaks = 9:21, labels = paste(9:21, ":00", sep = ""))
+
+```
+
+En este gráfico observamos la frecuencia de las horas de la compra, podemos observar que la hora que más se frecuenta es las 20 de la tarde. Por otra parte la primera y última hora de apertura del supermercado son las horas que menos se frecuentan entre la gente. Además podemos observar que durante el dia la frecuencia con la que se compra es bastante uniforme si comparamos las horas entre las 10 y las 19, ya que no vemos mucha diferencia entre el número de compras de unas horas con otras.
+
+\textbf{Análisis bivariante}
+
+Una vez ya realizado el análisis univariante en el que hemos conocido la información de las horas en las que la gente compra con más frecuencia, vamos a realizar el análisis bivariante para indagar más a fondo en la información de los datos que tenemos. 
+En este análisis bivariante hemos comparado la hora del día en la que se realiza la compra con el importe total de cada compra,de
+este modo podremos encontrar información muy útil como a que hora se hacen compras más grandes o pequeñas, y quizá así encontrar un patrón que nos pueda servir para optimizar ciertos aspectos del supermercado. En el siguiente gráfico cajas se representa la distribución del importe total de cada ticket en función de la hora de compra. La variable Importe total ha sido asignado al eje de las Y mientras que las horas al de las X, por tanto cada caja representará la distribución de cada hora, y conforme más alta se encuentre la caja, mayor será el importe total de dichos tickets.Por tanto podemos analizar la dispersión de los puntos. Pues, por ejemplo si nos fijamos en la hora de las 20 hasta las 21, que ya hemos visto en la gráfica de antes que es la hora en la que más gente va a comprar, podemos observar como los puntos están muy concentrados en la zona baja, esto significa que la mayoría de compras son compras bastante pequeñas.
+Por otra parte en las horas de la mañana(de 10 a 13), hay un menor número de compras, sin embargo hay compras con un importe total mucho más grande. También podemos observar como a partir de las 21 se producen pocas compras y con un importe total relativamente bajo, esto indica que estas compras son compras de última hora normalmente.
+
+```{r}
+datos_agrupados <- df3 %>% group_by(ticket_id)
+productos_por_ticket2 <- summarise(datos_agrupados, n= n(), HoraOperacion, ImporteTotal)
+gbn<- unique(productos_por_ticket2)
+# Importar la columna 'intervalo_hora' del dataframe 'a' al dataframe 'gbn'
+gbn$intervalo_hora <- a$intervalo_hora
+
+# Mostrar las primeras filas del dataframe 'gbn' con la columna importada
+head(gbn)
+
+# Suponiendo que tienes un dataframe llamado 'datos' que contiene el importe total del ticket y el intervalo horario
+
+
+  
+# Crear el gráfico de dispersión
+ggplot(gbn, aes(x = intervalo_hora, y = ImporteTotal)) +
+  geom_point(color = "red") +
+  labs(title = "Relación entre intervalo horario e importe total del ticket", 
+       x = "Importe Total del Ticket", y = "Intervalo horario") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+
+```
+
+Para realizar este análisis bivariante hemos utilizado un diagrama de dispersión ya que estamos trabajando con una variable numérica y una continua. En este diagrama, cada uno de los puntos representa una compra, cada una de estas compras se encuentran en una franja horaria. Aqui hay que seguir modificando.
+
+### 2.2.3
+
+<<<<<<< HEAD
+¿Cómo afecta la localización del local a la compra?
+
+Para garantizar un análisis robusto de los datos y una respuesta efectiva a la pregunta planteada, es fundamental realizar una serie de pasos previos. Primero, es necesario realizar una limpieza de los datos para eliminar cualquier información irrelevante o inconsistente que no contribuya al objetivo del análisis.
+
+En este caso, partimos de un conjunto de datos que contiene información sobre compras, y nos centramos en analizar el comportamiento de las mismas según la ubicación. Por lo tanto, identificamos la variable "Provincia" como la principal, ya que nos permite distinguir la ubicación de cada compra. Además de esta variable, podemos tener otras como el importe total de la compra o los precios de los productos.
+
+Una vez sabemos nuestras variables de interés, hemos descartado cualquier información que no esté relacionada con el análisis de las compras por ubicación, como, por ejemplo, datos sobre clientes o detalles irrelevantes sobre los productos. Para garantizar esto, primero realizamos la limpieza del data frame. En este proceso, agrupamos los datos por provincia e importe total, sumando el número de veces que aparece cada importe total por provincia. Esto aseguró que cada registro en nuestro conjunto de datos representara un ticket individual, ya que de lo contrario tendríamos múltiples registros para cada ticket debido a la presencia de varios productos. 
+
+Con este proceso lo que conseguimos es considerar solo las dos variables que nos interesaban en nuestro análisis que son nuestra variable provincia que es cualitativa, y nuestra variable Importe Total que es cuantitativa.
+
+Dado que estamos interesados en realizar un análisis bivariante que nos de una conclusión sobre la relación entre la ubicación y el importe total de las compras, decidimos representar este mediante un gráfico de dispersión utilizando la librería ggplot. Esta elección se debe a que estamos comparando una variable cualitativa (las provincias) con una variable numérica (los importes totales), y el gráfico de dispersión es una forma efectiva de visualizar esta relación.
+
+
+```{r Pregunta 3}
+rm(list = ls())
+observaciones <- read_csv("./ficheros_posteriores/observaciones.csv")
+observaciones<- observaciones%>%select(-...1)
+observaciones2<-observaciones%>%group_by(ImporteTotal,Provincia)%>%
+  summarise(Total = sum(n()))
+observaciones2<-select(observaciones2,c(Provincia,ImporteTotal))
+ggplot(observaciones2,aes(Provincia,y=ImporteTotal))+geom_point()+coord_flip()+labs(title = "Relacion entre Provincias e importe Total", x = " Provincias", y = "Importe Total")
+```
+
+La conclusión del análisis del gráfico sugiere que, aunque Denia se destaque como el lugar donde se realizan las compras de mayor valor, Valencia también muestra compras significativamente elevadas y cercanas a ese máximo. Esta observación sugiere que Valencia podría tener un nivel económico similar o incluso superior al de Denia, a pesar de que Denia tenga la compra más alta en este conjunto de datos limitado.
+Sin embargo, para llegar a una conclusión más definitiva sobre las diferencias en el nivel económico entre Denia y Valencia, sería necesaria una muestra más amplia y equitativa de tickets en cada ubicación. Con un conjunto de datos más completo, podríamos realizar un análisis más preciso y exhaustivo que nos permita comparar de manera más precisa los valores de compra en todas las ubicaciones.
+En resumen, este análisis nos permite identificar patrones interesantes sobre el comportamiento de las compras según la ubicación, destacando la importancia de investigar más a fondo las razones detrás de estas diferencias en los valores de compra entre diferentes ubicaciones.
+
+
+
+
+Otra variable para representar que nos ha parecido muy interesante su relación con la ubicación es el precio de cada producto individual.
+
+En este caso, seguiremos manteniendo la variable "Provincia" como la principal, ya que nos permite distinguir la ubicación de cada compra.
+
+Una vez sabemos nuestras variables de interés, hemos descartado cualquier información que no esté relacionada con el análisis de las compras por ubicación, como, por ejemplo, datos sobre clientes o detalles irrelevantes sobre los productos. Para garantizar esto, primero realizamos la limpieza del data frame. En este proceso, simplemente tendremos que realizar una operación de selección en la que tendremos solamente nuestras variables de interés.
+
+Con este proceso lo que conseguimos es considerar solo las dos variables que nos interesaban en nuestro análisis que son nuestra variable provincia que es cualitativa, y nuestra variable Importe de cada producto que es cuantitativa.
+
+Dado que estamos interesados de nuevo en realizar un análisis bivariante que nos dé una conclusión sobre la relación entre la ubicación y el importe por producto de las compras, decidimos representar esta mediante un gráfico de dispersión utilizando la librería ggplot. Esta elección se debe a que estamos comparando una variable cualitativa (las provincias) con una variable numérica (el importe por producto), y el gráfico de dispersión es una forma efectiva de visualizar esta relación.
+
+=======
+>>>>>>> 5a0351bbf24816b5d1dd939c68ce064cb5e6dbd2
+```{r}
+
+```
+
+
+### 2.2.4
+
+```{r Pregunta 4}
+
+```
+
+### 2.2.5
+
+```{r Pregunta 5}
+
+```
+
+A primera vista, podría parecer axiomático que la presencia de competidores cercanos influiría en el comportamiento de compra en diferentes ubicaciones. Sin embargo, en el ámbito del análisis de datos, nos esforzamos por abordar las preguntas con un enfoque más riguroso y cuantitativo. En este sentido, nos embarcamos en una investigación para explorar esta cuestión: ¿Existe una relación significativa entre la competencia cercana y las compras en distintas ubicaciones?
+
+Para abordar esta interrogante, utilizamos la información a nuestra disposición, comenzando con un exhaustivo proceso de preparación de datos basado en el conjunto de datos generado a partir de tickets de compra digitales. Este proceso implicó la limpieza y la transformación de los datos para obtener un conjunto de datos de alta calidad y fiabilidad. Además, empleamos la potencia de la librería "OpenStreetMap" (OSM) para obtener las coordenadas geográficas de los establecimientos Mercadona que estábamos estudiando. Aunque esta tarea presentó algunos desafíos, como la imprecisión en la obtención de algunas coordenadas, finalmente logramos crear un conjunto de datos denominado "mercadona_df_filtered", que agrupaba las variables relevantes para nuestro análisis y calculaba la media de las ventas totales para cada sucursal de Mercadona.
+
+Además, utilizamos datos externos que contenían información sobre los competidores de Mercadona - “competidores.csv”  y sus respectivas coordenadas geográficas. Estos datos requerían una labor de limpieza y normalización para garantizar su integridad y coherencia con nuestros análisis.
+
+Con ambos conjuntos de datos preparados y limpios, procedimos a cuantificar la proximidad de los competidores cercanos a cada sucursal de Mercadona. Para ello, calculamos la distancia euclidiana entre cada sucursal y sus competidores más próximos, definiendo dos rangos de proximidad: 500 metros y 1 kilómetro. Estos cálculos nos permitieron crear dos nuevas variables, "competidores" (dentro de un radio de 1 km) y "competidores_cercanos" (dentro de un radio de 500 metros), que representaban el número de competidores cercanos a cada sucursal de Mercadona en los rangos especificados.
+
+Posteriormente, llevamos a cabo un análisis exploratorio de los datos mediante la visualización de múltiples gráficos, utilizando técnicas adecuadas para cada tipo de variable. A pesar de nuestras expectativas iniciales, los resultados revelaron una correlación insignificante entre la presencia de competidores cercanos y las ventas totales de las sucursales de Mercadona. Este hallazgo fue respaldado tanto por los análisis cuantitativos como por la inspección visual de los datos.
+
+En conclusión, aunque inicialmente podríamos haber esperado que la competencia cercana tuviera un impacto significativo en las compras en diferentes ubicaciones, nuestros análisis no respaldan esta hipótesis. Es posible que futuras investigaciones puedan arrojar más luz sobre esta cuestión, pero con los datos y análisis disponibles, no podemos afirmar que exista una relación sustancial entre la competencia cercana y el comportamiento de compra en distintas ubicaciones.
+
+### 2.2.6
+
+```{r Pregunta 6}
+
+```

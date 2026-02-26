@@ -1,0 +1,39 @@
+---
+title: "Efectos_Parking - ProyectoTD2024"
+author: Pablo Quesada, Sebastian David Gutierrez, Hugo Frasquet,
+  Mateo Mendez, Juan Gomez y David Ricci.
+date: "r Sys.Date()"
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r}
+library(dtplyr)
+library(tidyverse)
+```
+
+
+
+```{r}
+df <- read.csv('ficheros_posteriores/observaciones.csv')
+# 1. Calcular la proporción de cada producto por provincia 
+productos_por_provincia <- df %>%
+  group_by(Provincia, Descripcion) %>%
+  summarise(n = n()) %>%
+  mutate(proporcion = n / sum(n)) %>%
+  arrange(desc(n)) %>%
+  slice(1)  # Seleccionar el producto más comprado en cada provincia
+
+# 2. Graficar el producto más comprado por provincia (proporción, producto/nº tickets)
+ggplot(productos_por_provincia, aes(x = Provincia, y = proporcion, fill = Descripcion)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Producto más comprado por provincia (producto/nº tickets)",
+       x = "Provincia",
+       y = "Proporción del producto más comprado") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.key.size = unit(0.3, "cm")) +
+  scale_fill_discrete(name = "Producto")
+```
+
+En primer lugar, para responder a esta pregunta, vamos a utilizar los datos que nos proporcionan las variables "Provincia" y "Descripcion", ya que en este gráfico queremos observar la relación que tiene la localización del local con los productos comprados.
+El gráfico utilizado ha sido uno de barras, ya que se usa para comparar los valores de una variable categórica, en nuestro caso esta variable es la provincia. Cada barra representa una categoría y su altura indica la proporción de esa categoría, en nuestro caso la altura del gráfico representa concretamente una proporción entre la cantidad de productos comprados(del producto más comprado) y el número de tickets de esa provincia. Además, en la leyenda encontramos los productos más comprados distinguidos con diferentes colores.
+En conclusión, podría ser que existan variaciones significativas en las preferencias de compra de productos entre diferentes provincias. Algunas provincias pueden tener una preferencia notable por ciertos productos, mientras que otras pueden mostrar una distribución más uniforme. Esto podría deberse a diferencias en la cultura local, la disponibilidad de productos o las preferencias individuales de los consumidores en cada región. 
